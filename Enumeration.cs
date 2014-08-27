@@ -42,7 +42,7 @@ namespace DebugLib
 		*/
 
 		/// <summary>
-		/// objectの持つプロパティをコンソールに出力する。
+		/// オブジェクトの持つプロパティをコンソールに出力する。
 		/// </summary>
 		/// <param name="source"></param>
 		public static void DLOutput(this object source)
@@ -102,8 +102,7 @@ namespace DebugLib
 		private static void EnumeratePropertiesRecursive(object obj, StringBuilder sb, Stack propertyPath)
 		{
 			int deep = propertyPath.Count - 1;
-			if (deep > MaxDeep)
-				return;
+			if (deep > MaxDeep) return;
 
 			string indent = CreateIndent(deep);
 			var properties = obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
@@ -114,12 +113,10 @@ namespace DebugLib
 				{
 					var value = p.GetValue(obj);
 					bool isLoop = propertyPath.Contains(value);
-					sb.AppendFormat("{0}{1} = {2}{3}\n", indent, p.Name, ValueToString(value),
-						isLoop ? "<循環参照>" : "");
+					sb.AppendFormat("{0}{1} = {2}{3}\n", indent, p.Name, ValueToString(value), isLoop ? "<循環参照>" : "");
 
 					// 循環参照による無限ループを防止
-					if (isLoop)
-						continue;
+					if (isLoop) continue;
 
 					MoveToSubProperty(value, p.PropertyType, sb, propertyPath);
 				}
@@ -133,8 +130,7 @@ namespace DebugLib
 		private static void EnumerateEnumerableRecursive(IEnumerable enumerable, StringBuilder sb, Stack propertyPath)
 		{
 			int deep = propertyPath.Count - 1;
-			if (deep > MaxDeep)
-				return;
+			if (deep > MaxDeep) return;
 
 			string indent = CreateIndent(deep);
 			int index = 0;
@@ -142,13 +138,11 @@ namespace DebugLib
 			foreach (var item in enumerable)
 			{
 				bool isLoop = propertyPath.Contains(item);
-				sb.AppendFormat("{0}[{1}] {2}{3}\n", indent, index, ValueToString(item),
-					isLoop ? "<循環参照>" : "");
+				sb.AppendFormat("{0}[{1}] {2}{3}\n", indent, index, ValueToString(item), isLoop ? "<循環参照>" : "");
 				index++;
 
 				// 循環参照による無限ループを防止
-				if (isLoop)
-					continue;
+				if (isLoop) continue;
 
 				MoveToSubProperty(item, item.GetType(), sb, propertyPath);
 			}
@@ -156,12 +150,10 @@ namespace DebugLib
 
 		private static void MoveToSubProperty(object value, Type type, StringBuilder sb, Stack propertyPath)
 		{
-			if (value == null)
-				return;
+			if (value == null) return;
 
 			// プリミティブは何もしない(string,decimalはIsPrimitiveがfalseになるので明示的に追加する)
-			if (type.IsPrimitive || type == typeof(string) || type == typeof(decimal))
-				return;
+			if (type.IsPrimitive || type == typeof(string) || type == typeof(decimal)) return;
 
 			propertyPath.Push(value);
 
@@ -181,13 +173,13 @@ namespace DebugLib
 
 		private static string ValueToString(object value)
 		{
-			if (value == null)
-				return "(null)";
+			if (value == null) return "(null)";
 
 			var type = value.GetType();
 
 			if (type == typeof(string))
 				return "\"" + value + "\"";
+
 			if (type == typeof(char))
 				return "\'" + value + "\'";
 
