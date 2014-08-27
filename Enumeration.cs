@@ -27,7 +27,7 @@ namespace DebugLib
 		private const int IndentSize = 4;
 		private const int MaxDeep = 5;
 		private const string LoopSignature = "<循環参照>";
-		private static readonly BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
+		private static readonly BindingFlags AccessFlags = BindingFlags.Public | BindingFlags.Instance;
 
 		/*
 		private readonly static Dictionary<char, string> convertEscapeSequences = new Dictionary<char, string>
@@ -77,30 +77,25 @@ namespace DebugLib
 		private static void DampObject(object obj, StringBuilder sb, Stack propertyPath)
 		{
 			int deep = propertyPath.Count;
-			if (deep > MaxDeep)
-			{
-				return;
-			}
-
 			string indent = CreateIndent(deep);
-			var properties = obj.GetType().GetProperties(flags);
 
+			var properties = obj.GetType().GetProperties(AccessFlags);
 			foreach (var p in properties)
 			{
 				try
 				{
 					var value = p.GetValue(obj);
-					bool isLoop = propertyPath.Contains(value);
+					bool isLooping = propertyPath.Contains(value);
 					sb.AppendFormat("{0}{1} = {2}{3}\r\n",
-						indent, p.Name, ValueToString(value), isLoop ? LoopSignature : "");
+						indent, p.Name, ValueToString(value), isLooping ? LoopSignature : "");
 
-					// 循環参照による無限ループを防止
-					if (isLoop) continue;
+					if (isLooping) continue;
 
 					DampValue(value, p.PropertyType, sb, propertyPath);
 				}
 				catch (Exception ex)
 				{
+					// GetValueで例外有り
 					sb.AppendFormat("{0}{1} = {2}\r\n", indent, p.Name, ex.Message);
 				}
 			}
@@ -109,21 +104,17 @@ namespace DebugLib
 		private static void DampCollection(IEnumerable enumerable, StringBuilder sb, Stack propertyPath)
 		{
 			int deep = propertyPath.Count;
-			if (deep > MaxDeep)
-				return;
-
 			string indent = CreateIndent(deep);
-			
+
 			int i = 0;
 			foreach (var item in enumerable)
 			{
-				bool isLoop = propertyPath.Contains(item);
+				bool isLooping = propertyPath.Contains(item);
 				sb.AppendFormat("{0}[{1}] {2}{3}\r\n",
-					indent, i, ValueToString(item), isLoop ? LoopSignature : "");
+					indent, i, ValueToString(item), isLooping ? LoopSignature : "");
 				i++;
 
-				// 循環参照による無限ループを防止
-				if (isLoop) continue;
+				if (isLooping) continue;
 
 				DampValue(item, item.GetType(), sb, propertyPath);
 			}
@@ -133,27 +124,31 @@ namespace DebugLib
 		{
 			if (IsPrimitiveOrNull(value)) return;
 
-			propertyPath.Push(value);
-
-			// オブジェクト・コレクションは括弧で括る
 			int deep = propertyPath.Count;
-			string bracketsIndent = CreateIndent(deep - 1);
-			sb.AppendLine(bracketsIndent + "{");
+			string indent = CreateIndent(deep);
 
-			if (value is IEnumerable)
-			{
-				DampCollection((IEnumerable)value, sb, propertyPath);
-			}
-			else
-			{
-				DampObject(value, sb, propertyPath);
-			}
-	
-			sb.AppendLine(bracketsIndent + "}");
+			// オブジェクト・コレクションのダンプ開始
+			propertyPath.Push(value);
+			sb.AppendLine(indent + "{");
 
+			if (deep < MaxDeep)
+			{
+				if (value is IEnumerable)
+				{
+					DampCollection((IEnumerable)value, sb, propertyPath);
+				}
+				else
+				{
+					DampObject(value, sb, propertyPath);
+				}
+			}
+
+			// ダンプ終了
+			sb.AppendLine(indent + "}");
 			propertyPath.Pop();
 		}
 
+		// FIX:enumも含む
 		private static bool IsPrimitiveOrNull(object obj)
 		{
 			if (obj == null)
@@ -162,6 +157,10 @@ namespace DebugLib
 			// string,decimalはIsPrimitive = falseなので明示する
 			var type = obj.GetType();
 			if (type.IsPrimitive || type == typeof(string) || type == typeof(decimal))
+				return true;
+
+			// enum
+			if (obj is Enum)
 				return true;
 
 			return false;
