@@ -26,6 +26,8 @@ namespace DebugLib
 
 		private const int IndentSize = 4;
 		private const int MaxDeep = 5;
+		private const string LoopSignature = "<循環参照>";
+		private static readonly BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
 
 		/*
 		private readonly static Dictionary<char, string> convertEscapeSequences = new Dictionary<char, string>
@@ -42,70 +44,46 @@ namespace DebugLib
 		*/
 
 		/// <summary>
-		/// オブジェクトの持つプロパティをコンソールに出力する。
+		/// 指定されたオブジェクトの内容を再帰的に出力する。
 		/// </summary>
-		/// <param name="source"></param>
-		public static void DLOutput(this object source)
+		/// <param name="obj"></param>
+		public static void Damp(this object obj)
 		{
-			Console.WriteLine(EnumeratePropertiesRecursive(source));
+			Console.WriteLine(DampToString(obj));
 		}
 
 		/// <summary>
-		/// コレクションの要素をコンソールに出力する。
-		/// </summary>
-		/// <param name="source"></param>
-		public static void DLOutput(this IEnumerable source)
-		{
-			Console.WriteLine(EnumerateEnumerableRecursive(source));
-		}
-
-		/// <summary>
-		/// インスタンスのプロパティを "名前 = 値" 形式で再帰的に列挙する。
-		/// コレクション型プロパティは名前の代わりにインデックスを表示する。
-		/// プロパティのgetterで例外が発生した場合は値の代わりに例外メッセージを表示する。
+		/// 指定されたオブジェクトの内容を再帰的に文字列化する。
+		/// インスタンスはプロパティ、コレクションは各要素、プリミティブは値のみを
+		/// 文字列化する。
+		/// 例外が発生した場合は値の代わりに例外メッセージを文字列化する。
 		/// </summary>
 		/// <param name="obj"></param>
 		/// <returns></returns>
-		public static string EnumeratePropertiesRecursive(object obj)
+		public static string DampToString(object obj)
 		{
-			var sb = new StringBuilder();
+			if (IsPrimitiveOrNull(obj))
+				return ValueToString(obj);
 
 			// 循環参照検知用スタック
 			var propertyPath = new Stack();
-			propertyPath.Push(obj);
 
-			// obj自身のプロパティの深さ(deep)を0として再帰列挙
-			EnumeratePropertiesRecursive(obj, sb, propertyPath);
+			var sb = new StringBuilder();
+			DampValue(obj, obj.GetType(), sb, propertyPath);
 
 			return sb.ToString();
 		}
 
-		/// <summary>
-		/// コレクションの各要素を "インデックス 値" 形式で再帰的に列挙する。
-		/// </summary>
-		/// <param name="enumerable"></param>
-		/// <returns></returns>
-		public static string EnumerateEnumerableRecursive(IEnumerable enumerable)
+		private static void DampObject(object obj, StringBuilder sb, Stack propertyPath)
 		{
-			var sb = new StringBuilder();
-
-			// 循環参照検知用スタック
-			var propertyPath = new Stack();
-			propertyPath.Push(enumerable);
-
-			// コレクションの要素の深さ(deep)を0として再帰列挙
-			EnumerateEnumerableRecursive(enumerable, sb, propertyPath);
-
-			return sb.ToString();
-		}
-
-		private static void EnumeratePropertiesRecursive(object obj, StringBuilder sb, Stack propertyPath)
-		{
-			int deep = propertyPath.Count - 1;
-			if (deep > MaxDeep) return;
+			int deep = propertyPath.Count;
+			if (deep > MaxDeep)
+			{
+				return;
+			}
 
 			string indent = CreateIndent(deep);
-			var properties = obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+			var properties = obj.GetType().GetProperties(flags);
 
 			foreach (var p in properties)
 			{
@@ -113,62 +91,80 @@ namespace DebugLib
 				{
 					var value = p.GetValue(obj);
 					bool isLoop = propertyPath.Contains(value);
-					sb.AppendFormat("{0}{1} = {2}{3}\n", indent, p.Name, ValueToString(value), isLoop ? "<循環参照>" : "");
+					sb.AppendFormat("{0}{1} = {2}{3}\r\n",
+						indent, p.Name, ValueToString(value), isLoop ? LoopSignature : "");
 
 					// 循環参照による無限ループを防止
 					if (isLoop) continue;
 
-					MoveToSubProperty(value, p.PropertyType, sb, propertyPath);
+					DampValue(value, p.PropertyType, sb, propertyPath);
 				}
 				catch (Exception ex)
 				{
-					sb.AppendFormat("{0}{1} = {2}\n", indent, p.Name, ex.Message);
+					sb.AppendFormat("{0}{1} = {2}\r\n", indent, p.Name, ex.Message);
 				}
 			}
 		}
 
-		private static void EnumerateEnumerableRecursive(IEnumerable enumerable, StringBuilder sb, Stack propertyPath)
+		private static void DampCollection(IEnumerable enumerable, StringBuilder sb, Stack propertyPath)
 		{
-			int deep = propertyPath.Count - 1;
-			if (deep > MaxDeep) return;
+			int deep = propertyPath.Count;
+			if (deep > MaxDeep)
+				return;
 
 			string indent = CreateIndent(deep);
-			int index = 0;
-
+			
+			int i = 0;
 			foreach (var item in enumerable)
 			{
 				bool isLoop = propertyPath.Contains(item);
-				sb.AppendFormat("{0}[{1}] {2}{3}\n", indent, index, ValueToString(item), isLoop ? "<循環参照>" : "");
-				index++;
+				sb.AppendFormat("{0}[{1}] {2}{3}\r\n",
+					indent, i, ValueToString(item), isLoop ? LoopSignature : "");
+				i++;
 
 				// 循環参照による無限ループを防止
 				if (isLoop) continue;
 
-				MoveToSubProperty(item, item.GetType(), sb, propertyPath);
+				DampValue(item, item.GetType(), sb, propertyPath);
 			}
 		}
 
-		private static void MoveToSubProperty(object value, Type type, StringBuilder sb, Stack propertyPath)
+		private static void DampValue(object value, Type type, StringBuilder sb, Stack propertyPath)
 		{
-			if (value == null) return;
-
-			// プリミティブは何もしない(string,decimalはIsPrimitiveがfalseになるので明示的に追加する)
-			if (type.IsPrimitive || type == typeof(string) || type == typeof(decimal)) return;
+			if (IsPrimitiveOrNull(value)) return;
 
 			propertyPath.Push(value);
 
+			// オブジェクト・コレクションは括弧で括る
+			int deep = propertyPath.Count;
+			string bracketsIndent = CreateIndent(deep - 1);
+			sb.AppendLine(bracketsIndent + "{");
+
 			if (value is IEnumerable)
 			{
-				// コレクション
-				EnumerateEnumerableRecursive((IEnumerable)value, sb, propertyPath);
+				DampCollection((IEnumerable)value, sb, propertyPath);
 			}
 			else
 			{
-				// 非コレクション
-				EnumeratePropertiesRecursive(value, sb, propertyPath);
+				DampObject(value, sb, propertyPath);
 			}
+	
+			sb.AppendLine(bracketsIndent + "}");
 
 			propertyPath.Pop();
+		}
+
+		private static bool IsPrimitiveOrNull(object obj)
+		{
+			if (obj == null)
+				return true;
+
+			// string,decimalはIsPrimitive = falseなので明示する
+			var type = obj.GetType();
+			if (type.IsPrimitive || type == typeof(string) || type == typeof(decimal))
+				return true;
+
+			return false;
 		}
 
 		private static string ValueToString(object value)
