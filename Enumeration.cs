@@ -14,21 +14,18 @@ namespace DebugLib
 	public static class Enumeration
 	{
 		/* 
-		 * 設定可能？
-		 * BindingFlags,
-		 * インデントサイズ、
-		 * ValueToString、
-		 * プロパティの書式、
-		 * コレクション項目を列挙するか、
-		 * maxDeep,
-		 * 
+		 * MAYBE:設定可能？
+		 * BindingFlags
+		 * インデントサイズ
+		 * maxDeep
 		 */
 
 		private const int IndentSize = 4;
 		private const int MaxDeep = 5;
-		private const string LoopSignature = "<循環参照>";
+		private const string LoopSignature = "<LoopReference>";
+		private const string MaxDeepSignature = "<TooDeep>";
 		private static readonly BindingFlags AccessFlags = BindingFlags.Public | BindingFlags.Instance;
-		private static readonly Dictionary<string, string> escapedChars = new Dictionary<string, string>
+		private static readonly Dictionary<string, string> EscapedChars = new Dictionary<string, string>
 		{
 			{ "\0", "\\0" },
 			{ "\a", "\\a" },
@@ -141,7 +138,7 @@ namespace DebugLib
 			}
 			else
 			{
-				sb.AppendLine(CreateIndent(deep + 1) + "<MaxDeep>");
+				sb.AppendLine(CreateIndent(deep + 1) + MaxDeepSignature);
 			}
 
 			// ダンプ終了
@@ -186,7 +183,7 @@ namespace DebugLib
 		private static string EspaceString(string str)
 		{
 			var sb = new StringBuilder(str);
-			foreach (var converter in escapedChars)
+			foreach (var converter in EscapedChars)
 			{
 				sb.Replace(converter.Key, converter.Value);
 			}
