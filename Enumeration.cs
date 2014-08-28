@@ -28,20 +28,17 @@ namespace DebugLib
 		private const int MaxDeep = 5;
 		private const string LoopSignature = "<循環参照>";
 		private static readonly BindingFlags AccessFlags = BindingFlags.Public | BindingFlags.Instance;
-
-		/*
-		private readonly static Dictionary<char, string> convertEscapeSequences = new Dictionary<char, string>
+		private static readonly Dictionary<string, string> escapedChars = new Dictionary<string, string>
 		{
-			{ '\0', "\\0" },
-			{ '\a', "\\a" },
-			{ '\b', "\\b" },
-			{ '\f', "\\f" },
-			{ '\n', "\\n" },
-			{ '\r', "\\r" },
-			{ '\t', "\\t" },
-			{ '\v', "\\v" },
+			{ "\0", "\\0" },
+			{ "\a", "\\a" },
+			{ "\b", "\\b" },
+			{ "\f", "\\f" },
+			{ "\n", "\\n" },
+			{ "\r", "\\r" },
+			{ "\t", "\\t" },
+			{ "\v", "\\v" },
 		};
-		*/
 
 		/// <summary>
 		/// 指定されたオブジェクトの内容を再帰的に出力する。
@@ -69,7 +66,7 @@ namespace DebugLib
 			var propertyPath = new Stack();
 
 			var sb = new StringBuilder();
-			DampValue(obj, obj.GetType(), sb, propertyPath);
+			DampSubItem(obj, sb, propertyPath);
 
 			return sb.ToString();
 		}
@@ -91,7 +88,7 @@ namespace DebugLib
 
 					if (isLooping) continue;
 
-					DampValue(value, p.PropertyType, sb, propertyPath);
+					DampSubItem(value, sb, propertyPath);
 				}
 				catch (Exception ex)
 				{
@@ -116,18 +113,18 @@ namespace DebugLib
 
 				if (isLooping) continue;
 
-				DampValue(item, item.GetType(), sb, propertyPath);
+				DampSubItem(item, sb, propertyPath);
 			}
 		}
 
-		private static void DampValue(object value, Type type, StringBuilder sb, Stack propertyPath)
+		private static void DampSubItem(object value, StringBuilder sb, Stack propertyPath)
 		{
 			if (IsPrimitiveOrNull(value)) return;
 
 			int deep = propertyPath.Count;
 			string indent = CreateIndent(deep);
 
-			// オブジェクト・コレクションのダンプ開始
+			// オブジェクトのプロパティまたはコレクションの各要素のダンプ開始
 			propertyPath.Push(value);
 			sb.AppendLine(indent + "{");
 
@@ -142,13 +139,17 @@ namespace DebugLib
 					DampObject(value, sb, propertyPath);
 				}
 			}
+			else
+			{
+				sb.AppendLine(CreateIndent(deep + 1) + "<MaxDeep>");
+			}
 
 			// ダンプ終了
 			sb.AppendLine(indent + "}");
 			propertyPath.Pop();
 		}
 
-		// FIX:enumも含む
+		// FIX:メソッド名 enumも含む
 		private static bool IsPrimitiveOrNull(object obj)
 		{
 			if (obj == null)
@@ -171,14 +172,26 @@ namespace DebugLib
 			if (value == null) return "(null)";
 
 			var type = value.GetType();
+			string escapedValue = EspaceString(value.ToString());
 
 			if (type == typeof(string))
-				return "\"" + value + "\"";
+				return string.Format("\"{0}\" ({1})", escapedValue, value.GetType());
 
 			if (type == typeof(char))
-				return "\'" + value + "\'";
+				return string.Format("'{0}' ({1})", escapedValue, value.GetType());
 
-			return value.ToString();
+			return string.Format("{0} ({1})", escapedValue, value.GetType());
+		}
+
+		private static string EspaceString(string str)
+		{
+			var sb = new StringBuilder(str);
+			foreach (var converter in escapedChars)
+			{
+				sb.Replace(converter.Key, converter.Value);
+			}
+
+			return sb.ToString();
 		}
 
 		private static string CreateIndent(int deep)
