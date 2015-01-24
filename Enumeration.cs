@@ -15,9 +15,9 @@ namespace DebugLib
 	{
 		/* 
 		 * MAYBE:設定可能？
-		 * BindingFlags
-		 * インデントサイズ
-		 * maxDeep
+		 *	BindingFlags
+		 *	インデントサイズ
+		 *	maxDeep
 		 */
 
 		private const int IndentSize = 4;
@@ -41,9 +41,9 @@ namespace DebugLib
 		/// 指定されたオブジェクトの内容を再帰的に出力する。
 		/// </summary>
 		/// <param name="obj"></param>
-		public static void Damp(this object obj)
+		public static void Dump(this object obj)
 		{
-			Console.WriteLine(DampToString(obj));
+			Console.WriteLine(DumpToString(obj));
 		}
 
 		/// <summary>
@@ -54,7 +54,7 @@ namespace DebugLib
 		/// </summary>
 		/// <param name="obj"></param>
 		/// <returns></returns>
-		public static string DampToString(object obj)
+		public static string DumpToString(object obj)
 		{
 			if (IsPrimitiveOrNull(obj))
 				return ValueToString(obj);
@@ -63,12 +63,12 @@ namespace DebugLib
 			var propertyPath = new Stack();
 
 			var sb = new StringBuilder();
-			DampSubItem(obj, sb, propertyPath);
+			DumpSubItem(obj, sb, propertyPath);
 
 			return sb.ToString();
 		}
 
-		private static void DampObject(object obj, StringBuilder sb, Stack propertyPath)
+		private static void DumpObject(object obj, StringBuilder sb, Stack propertyPath)
 		{
 			int deep = propertyPath.Count;
 			string indent = CreateIndent(deep);
@@ -85,7 +85,7 @@ namespace DebugLib
 
 					if (isLooping) continue;
 
-					DampSubItem(value, sb, propertyPath);
+					DumpSubItem(value, sb, propertyPath);
 				}
 				catch (Exception ex)
 				{
@@ -95,7 +95,7 @@ namespace DebugLib
 			}
 		}
 
-		private static void DampCollection(IEnumerable enumerable, StringBuilder sb, Stack propertyPath)
+		private static void DumpCollection(IEnumerable enumerable, StringBuilder sb, Stack propertyPath)
 		{
 			int deep = propertyPath.Count;
 			string indent = CreateIndent(deep);
@@ -110,11 +110,11 @@ namespace DebugLib
 
 				if (isLooping) continue;
 
-				DampSubItem(item, sb, propertyPath);
+				DumpSubItem(item, sb, propertyPath);
 			}
 		}
 
-		private static void DampSubItem(object value, StringBuilder sb, Stack propertyPath)
+		private static void DumpSubItem(object value, StringBuilder sb, Stack propertyPath)
 		{
 			if (IsPrimitiveOrNull(value)) return;
 
@@ -129,11 +129,11 @@ namespace DebugLib
 			{
 				if (value is IEnumerable)
 				{
-					DampCollection((IEnumerable)value, sb, propertyPath);
+					DumpCollection((IEnumerable)value, sb, propertyPath);
 				}
 				else
 				{
-					DampObject(value, sb, propertyPath);
+					DumpObject(value, sb, propertyPath);
 				}
 			}
 			else
