@@ -14,10 +14,16 @@ namespace DebugLib
 	public static class Enumeration
 	{
 		/* 
-		 * MAYBE:設定可能？
+		 * TODO
+		 *	newlineのconst 化
+		 *	ArrayDumperのコンストラクタでWrite指定
+		 *	String.FormatのLoopSignatureのメソッド化
+		 *	型情報の表示をするかの設定
+		 * MAYBE
 		 *	BindingFlags
 		 *	インデントサイズ
 		 *	maxDeep
+		 *	
 		 */
 
 		private const int IndentSize = 4;
@@ -54,7 +60,7 @@ namespace DebugLib
 		/// </summary>
 		/// <param name="obj"></param>
 		/// <returns></returns>
-		public static string DumpToString(object obj)
+		public static string DumpToString(this object obj)
 		{
 			if (IsPrimitiveOrNull(obj))
 				return ValueToString(obj);
@@ -99,8 +105,8 @@ namespace DebugLib
 		{
 			int deep = propertyPath.Count;
 			string indent = CreateIndent(deep);
-
 			int i = 0;
+
 			foreach (var item in enumerable)
 			{
 				bool isLooping = propertyPath.Contains(item);
@@ -111,6 +117,46 @@ namespace DebugLib
 				if (isLooping) continue;
 
 				DumpSubItem(item, sb, propertyPath);
+			}
+		}
+
+		/// <summary>
+		/// 配列をダンプする。
+		/// ジャグ配列、多次元配列もダンプ可能。
+		/// </summary>
+		/// <param name="array"></param>
+		private static void DumpArray(Array array, StringBuilder sb, Stack propertyPath)
+		{
+			int deep = propertyPath.Count;
+			string indent = CreateIndent(deep);
+
+			//// 混合した配列はダンプできないので文字列化する
+
+			if (array.Rank == 2)
+			{
+				// 多次元配列
+				var dumper = new MultiDimensionArrayDumper(array);
+				dumper.Write += (s, e) =>
+				{
+					bool isLooping = propertyPath.Contains(e.Obj);
+					string index = "[" + string.Join(",", e.Indexes) + "]";
+					sb.AppendFormat("{0}{1} {2}{3}\r\n",
+							indent, index, ValueToString(e.Obj), isLooping ? LoopSignature : "");
+				};
+				dumper.Dump();
+			}
+			else
+			{
+				// ジャグ配列
+				var dumper = new JaggedArrayDumper(array);
+				dumper.Write += (s, e) =>
+				{
+					bool isLooping = propertyPath.Contains(e.Obj);
+					string index = "[" + string.Join("][", e.Indexes) + "]";
+					sb.AppendFormat("{0}{1} {2}{3}\r\n",
+							indent, index, ValueToString(e.Obj), isLooping ? LoopSignature : "");
+				};
+				dumper.Dump();
 			}
 		}
 
@@ -127,7 +173,11 @@ namespace DebugLib
 
 			if (deep < MaxDeep)
 			{
-				if (value is IEnumerable)
+				if (value is Array)
+				{
+					DumpArray((Array)value, sb, propertyPath);
+				}
+				else if (value is IEnumerable)
 				{
 					DumpCollection((IEnumerable)value, sb, propertyPath);
 				}
@@ -166,7 +216,8 @@ namespace DebugLib
 
 		private static string ValueToString(object value)
 		{
-			if (value == null) return "(null)";
+			if (value == null)
+				return "(null)";
 
 			var type = value.GetType();
 			string escapedValue = EspaceString(value.ToString());
@@ -194,6 +245,108 @@ namespace DebugLib
 		private static string CreateIndent(int deep)
 		{
 			return new string(' ', deep * IndentSize);
+		}
+
+		private class JaggedArrayDumper
+		{
+			// 
+			private List<int> indexes = new List<int>();
+			private Array array;
+
+			public JaggedArrayDumper(Array array)
+			{
+				if (array == null) throw new ArgumentNullException("array");
+				if (array.Rank != 1) throw new ArgumentException("ジャグ配列のみ指定できます。");
+				this.array = array;
+			}
+
+			public void Dump()
+			{
+				Dump(this.array);
+			}
+
+			private void Dump(Array array)
+			{
+				for (int i = 0; i < array.Length; i++)
+				{
+					var item = array.GetValue(i);
+					var subArray = item as Array;
+					indexes.Add(i);
+
+					if (subArray != null && subArray.Rank == 1)
+					{
+						Dump(subArray);
+					}
+					else
+					{
+						OnWrite(new WriteEventArgs(item, indexes));
+					}
+
+					indexes.RemoveAt(indexes.Count - 1);
+				}
+			}
+
+			public event EventHandler<WriteEventArgs> Write;
+			protected virtual void OnWrite(WriteEventArgs e)
+			{
+				if (Write != null)
+					Write(this, e);
+			}
+		}
+
+		private class MultiDimensionArrayDumper
+		{
+			private List<int> indexes = new List<int>();
+			private Array array;
+
+			public MultiDimensionArrayDumper(Array array)
+			{
+				if (array == null) throw new ArgumentNullException("array");
+				if (array.Rank == 1) throw new ArgumentException("多次元配列のみ指定できます。");
+				this.array = array;
+			}
+
+			public void Dump()
+			{
+				Dump(0);
+			}
+
+			private void Dump(int currentDimension)
+			{
+				// 最終次元
+				if (currentDimension == array.Rank)
+				{
+					var value = array.GetValue(indexes.ToArray());
+					OnWrite(new WriteEventArgs(value, indexes));
+					return;
+				}
+
+				for (int i = 0; i < array.GetLength(currentDimension); i++)
+				{
+					indexes.Add(i);
+					Dump(currentDimension + 1);
+					indexes.Remove(i);
+				}
+			}
+
+			public event EventHandler<WriteEventArgs> Write;
+			protected virtual void OnWrite(WriteEventArgs e)
+			{
+				if (Write != null)
+					Write(this, e);
+			}
+		}
+
+		private class WriteEventArgs : EventArgs
+		{
+			public WriteEventArgs(object obj, IEnumerable<int> indexes)
+			{
+				this.Obj = obj;
+				this.Indexes = indexes;
+			}
+
+			public object Obj { get; private set; }
+			public IEnumerable<int> Indexes { get; private set; }
 		}
 	}
 }
