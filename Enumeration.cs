@@ -132,7 +132,7 @@ namespace DebugLib
 
 			//// 混合した配列はダンプできないので文字列化する
 
-			if (array.Rank == 2)
+			if (array.Rank >= 2)
 			{
 				// 多次元配列
 				var dumper = new MultiDimensionArrayDumper(array);
@@ -249,7 +249,6 @@ namespace DebugLib
 
 		private class JaggedArrayDumper
 		{
-			// 
 			private List<int> indexes = new List<int>();
 			private Array array;
 
@@ -325,7 +324,7 @@ namespace DebugLib
 				{
 					indexes.Add(i);
 					Dump(currentDimension + 1);
-					indexes.Remove(i);
+					indexes.RemoveAt(indexes.Count - 1);
 				}
 			}
 
