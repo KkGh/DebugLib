@@ -261,10 +261,10 @@ namespace DebugLib
 
 			public void Dump()
 			{
-				Dump(this.array);
+				DumpRecursive(this.array);
 			}
 
-			private void Dump(Array array)
+			private void DumpRecursive(Array array)
 			{
 				for (int i = 0; i < array.Length; i++)
 				{
@@ -274,7 +274,7 @@ namespace DebugLib
 
 					if (subArray != null && subArray.Rank == 1)
 					{
-						Dump(subArray);
+						DumpRecursive(subArray);
 					}
 					else
 					{
@@ -307,23 +307,26 @@ namespace DebugLib
 
 			public void Dump()
 			{
-				Dump(0);
+				DumpRecursive(0);
 			}
 
-			private void Dump(int currentDimension)
+			private void DumpRecursive(int currentDimension)
 			{
-				// 最終次元
-				if (currentDimension == array.Rank)
-				{
-					var value = array.GetValue(indexes.ToArray());
-					OnWrite(new WriteEventArgs(value, indexes));
-					return;
-				}
-
-				for (int i = 0; i < array.GetLength(currentDimension); i++)
+				int length = array.GetLength(currentDimension);
+				for (int i = 0; i < length; i++)
 				{
 					indexes.Add(i);
-					Dump(currentDimension + 1);
+
+					if (currentDimension < array.Rank - 1)
+					{
+						DumpRecursive(currentDimension + 1);
+					}
+					else
+					{
+						var value = array.GetValue(indexes.ToArray());
+						OnWrite(new WriteEventArgs(value, indexes));
+					}
+
 					indexes.RemoveAt(indexes.Count - 1);
 				}
 			}
