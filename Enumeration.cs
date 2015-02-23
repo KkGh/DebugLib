@@ -15,33 +15,60 @@ namespace DebugLib
 	{
 		/* 
 		 * TODO
-		 *	newlineのconst 化
 		 *	ArrayDumperのコンストラクタでWrite指定
 		 *	String.FormatのLoopSignatureのメソッド化
-		 *	型情報の表示をするかの設定
-		 * MAYBE
-		 *	BindingFlags
-		 *	インデントサイズ
-		 *	maxDeep
+		 *	型情報を表示するかの設定
 		 *	
 		 */
-
-		private const int IndentSize = 4;
-		private const int MaxDeep = 5;
 		private const string LoopSignature = "<LoopReference>";
 		private const string MaxDeepSignature = "<TooDeep>";
-		private static readonly BindingFlags AccessFlags = BindingFlags.Public | BindingFlags.Instance;
+		private static readonly string NewLine = Environment.NewLine;
 		private static readonly Dictionary<string, string> EscapedChars = new Dictionary<string, string>
 		{
-			{ "\0", "\\0" },
-			{ "\a", "\\a" },
-			{ "\b", "\\b" },
-			{ "\f", "\\f" },
-			{ "\n", "\\n" },
-			{ "\r", "\\r" },
-			{ "\t", "\\t" },
-			{ "\v", "\\v" },
+			{ "\0", "\\0" }, { "\a", "\\a" }, { "\b", "\\b" }, { "\f", "\\f" }, { "\n", "\\n" }, { "\r", "\\r" }, { "\t", "\\t" }, { "\v", "\\v" }
 		};
+		private const int DefaultIndentSize = 4;
+		private const int DefaultMaxDepth = 5;
+		private static readonly BindingFlags DefaultAccessFlags = BindingFlags.Public | BindingFlags.Instance;
+		private static int indentSize = 4;
+		private static int maxDepth = 5;
+		private static BindingFlags accessFlags = DefaultAccessFlags;
+
+		/// <summary>
+		/// インデント幅を取得または設定する。
+		/// </summary>
+		public static int IndentSize
+		{
+			get { return indentSize; }
+			set
+			{
+				if (value < 0) throw new ArgumentOutOfRangeException();
+				indentSize = value;
+			}
+		}
+
+		/// <summary>
+		/// ダンプ時の最大のプロパティ深度。
+		/// 0を設定した場合はダンプ対象となるオブジェクトが持つプロパティのみを列挙する。
+		/// </summary>
+		public static int MaxDepth
+		{
+			get { return maxDepth; }
+			set
+			{
+				if (value < 0) throw new ArgumentOutOfRangeException();
+				maxDepth = value;
+			}
+		}
+
+		/// <summary>
+		/// 列挙するプロパティのアクセスフラグを取得または設定する。
+		/// </summary>
+		public static BindingFlags AccessFlags
+		{
+			get { return accessFlags; }
+			set { accessFlags = value; }
+		}
 
 		/// <summary>
 		/// 指定されたオブジェクトの内容を再帰的に出力する。
@@ -76,8 +103,8 @@ namespace DebugLib
 
 		private static void DumpObject(object obj, StringBuilder sb, Stack propertyPath)
 		{
-			int deep = propertyPath.Count;
-			string indent = CreateIndent(deep);
+			int depth = propertyPath.Count;
+			string indent = CreateIndent(depth);
 
 			var properties = obj.GetType().GetProperties(AccessFlags);
 			foreach (var p in properties)
@@ -86,7 +113,7 @@ namespace DebugLib
 				{
 					var value = p.GetValue(obj);
 					bool isLooping = propertyPath.Contains(value);
-					sb.AppendFormat("{0}{1} = {2}{3}\r\n",
+					sb.AppendFormat("{0}{1} = {2}{3}" + NewLine,
 						indent, p.Name, ValueToString(value), isLooping ? LoopSignature : "");
 
 					if (isLooping) continue;
@@ -96,21 +123,21 @@ namespace DebugLib
 				catch (Exception ex)
 				{
 					// GetValueで例外有り
-					sb.AppendFormat("{0}{1} = {2}\r\n", indent, p.Name, ex.Message);
+					sb.AppendFormat("{0}{1} = {2}" + NewLine, indent, p.Name, ex.Message);
 				}
 			}
 		}
 
 		private static void DumpCollection(IEnumerable enumerable, StringBuilder sb, Stack propertyPath)
 		{
-			int deep = propertyPath.Count;
-			string indent = CreateIndent(deep);
+			int depth = propertyPath.Count;
+			string indent = CreateIndent(depth);
 			int i = 0;
 
 			foreach (var item in enumerable)
 			{
 				bool isLooping = propertyPath.Contains(item);
-				sb.AppendFormat("{0}[{1}] {2}{3}\r\n",
+				sb.AppendFormat("{0}[{1}] {2}{3}" + NewLine,
 					indent, i, ValueToString(item), isLooping ? LoopSignature : "");
 				i++;
 
@@ -127,8 +154,8 @@ namespace DebugLib
 		/// <param name="array"></param>
 		private static void DumpArray(Array array, StringBuilder sb, Stack propertyPath)
 		{
-			int deep = propertyPath.Count;
-			string indent = CreateIndent(deep);
+			int depth = propertyPath.Count;
+			string indent = CreateIndent(depth);
 
 			//// 混合した配列はダンプできないので文字列化する
 
@@ -140,7 +167,7 @@ namespace DebugLib
 				{
 					bool isLooping = propertyPath.Contains(e.Obj);
 					string index = "[" + string.Join(",", e.Indexes) + "]";
-					sb.AppendFormat("{0}{1} {2}{3}\r\n",
+					sb.AppendFormat("{0}{1} {2}{3}" + NewLine,
 							indent, index, ValueToString(e.Obj), isLooping ? LoopSignature : "");
 				};
 				dumper.Dump();
@@ -153,7 +180,7 @@ namespace DebugLib
 				{
 					bool isLooping = propertyPath.Contains(e.Obj);
 					string index = "[" + string.Join("][", e.Indexes) + "]";
-					sb.AppendFormat("{0}{1} {2}{3}\r\n",
+					sb.AppendFormat("{0}{1} {2}{3}" + NewLine,
 							indent, index, ValueToString(e.Obj), isLooping ? LoopSignature : "");
 				};
 				dumper.Dump();
@@ -164,14 +191,14 @@ namespace DebugLib
 		{
 			if (IsPrimitiveOrNull(value)) return;
 
-			int deep = propertyPath.Count;
-			string indent = CreateIndent(deep);
+			int depth = propertyPath.Count;
+			string indent = CreateIndent(depth);
 
 			// オブジェクトのプロパティまたはコレクションの各要素のダンプ開始
-			propertyPath.Push(value);
 			sb.AppendLine(indent + "{");
+			propertyPath.Push(value);
 
-			if (deep < MaxDeep)
+			if (depth <= MaxDepth)
 			{
 				if (value is Array)
 				{
@@ -188,7 +215,7 @@ namespace DebugLib
 			}
 			else
 			{
-				sb.AppendLine(CreateIndent(deep + 1) + MaxDeepSignature);
+				sb.AppendLine(CreateIndent(depth + 1) + MaxDeepSignature);
 			}
 
 			// ダンプ終了
@@ -242,9 +269,9 @@ namespace DebugLib
 			return sb.ToString();
 		}
 
-		private static string CreateIndent(int deep)
+		private static string CreateIndent(int depth)
 		{
-			return new string(' ', deep * IndentSize);
+			return new string(' ', depth * IndentSize);
 		}
 
 		private class JaggedArrayDumper
