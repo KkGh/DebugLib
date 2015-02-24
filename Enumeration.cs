@@ -27,15 +27,17 @@ namespace DebugLib
 		{
 			{ "\0", "\\0" }, { "\a", "\\a" }, { "\b", "\\b" }, { "\f", "\\f" }, { "\n", "\\n" }, { "\r", "\\r" }, { "\t", "\\t" }, { "\v", "\\v" }
 		};
-		private const int DefaultIndentSize = 4;
+		private const int DefaultIndentSize = 4;	// public?
 		private const int DefaultMaxDepth = 5;
 		private static readonly BindingFlags DefaultAccessFlags = BindingFlags.Public | BindingFlags.Instance;
+		private const bool DefaultShowPropertyType = true;
 		private static int indentSize = 4;
 		private static int maxDepth = 5;
 		private static BindingFlags accessFlags = DefaultAccessFlags;
+		private static bool showPropertyType = DefaultShowPropertyType;
 
 		/// <summary>
-		/// インデント幅を取得または設定する。
+		/// 0以上のインデント幅を取得または設定する。
 		/// </summary>
 		public static int IndentSize
 		{
@@ -48,7 +50,7 @@ namespace DebugLib
 		}
 
 		/// <summary>
-		/// ダンプ時の最大のプロパティ深度。
+		/// 0以上の最大のプロパティの深さを取得または設定する。
 		/// 0を設定した場合はダンプ対象となるオブジェクトが持つプロパティのみを列挙する。
 		/// </summary>
 		public static int MaxDepth
@@ -68,6 +70,15 @@ namespace DebugLib
 		{
 			get { return accessFlags; }
 			set { accessFlags = value; }
+		}
+
+		/// <summary>
+		/// プロパティの型情報を表示するかを取得または設定する。
+		/// </summary>
+		public static bool ShowPropertyType
+		{
+			get { return showPropertyType; }
+			set { showPropertyType = value; }
 		}
 
 		/// <summary>
@@ -249,14 +260,19 @@ namespace DebugLib
 			var type = value.GetType();
 			string escapedValue = EspaceString(value.ToString());
 
-			if (type == typeof(string))
-				return string.Format("\"{0}\" ({1})", escapedValue, value.GetType());
+			string str =
+				(type == typeof(string)) ? "\"" + escapedValue + "\"" :
+				(type == typeof(char)) ? "'" + escapedValue + "'" :
+				escapedValue;
 
-			if (type == typeof(char))
-				return string.Format("'{0}' ({1})", escapedValue, value.GetType());
+			if (ShowPropertyType)
+			{
+				str += " (" + type + ")";
+			}
 
-			return string.Format("{0} ({1})", escapedValue, value.GetType());
+			return str;
 		}
+
 
 		private static string EspaceString(string str)
 		{
