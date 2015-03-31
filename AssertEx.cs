@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DebugLib
@@ -8,6 +10,8 @@ namespace DebugLib
 	/// </summary>
 	public static class AssertEx
 	{
+		/* コレクションのアサーションは Microsoft.VisualStudio.TestTools.UnitTesting.CollectionAssert で可能 */
+
 		/// <summary>
 		/// 指定したactionが指定した例外をスローすることを検証する。
 		/// actionがnullの場合、例外をスローしない場合、Tと異なる例外を
