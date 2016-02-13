@@ -46,6 +46,9 @@ namespace DebugLib
         private const bool DefaultUseOverriddenToString = false;
         private static bool useOverriddenToString;
 
+        private const bool DefaultShowTypeNameOnly = false;
+        private static bool showTypeNameOnly;
+
         private static List<Type> typesAsString;
 
         static Enumeration()
@@ -100,6 +103,17 @@ namespace DebugLib
         {
             get { return showPropertyType; }
             set { showPropertyType = value; }
+        }
+
+        /// <summary>
+        /// プロパティの型情報を表示する時、型の名前空間を省略し、
+        /// 型名のみを表示するかを取得または設定する。
+        /// デフォルト値はfalse。
+        /// </summary>
+        public static bool ShowTypeNameOnly
+        {
+            get { return showTypeNameOnly; }
+            set { showTypeNameOnly = value; }
         }
 
         /// <summary>
@@ -348,11 +362,13 @@ namespace DebugLib
 
             if (ShowPropertyType)
             {
-                str += " (" + type + ")";
+                str += " (" + (ShowTypeNameOnly ? type.Name : type.ToString()) + ")";
             }
+
 
             return str;
         }
+
 
         /// <summary>
         /// 指定した型のToStringメソッドがオーバーライドされているかどうかを判定する。
