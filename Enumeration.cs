@@ -17,7 +17,6 @@ namespace DebugLib
 		 * TODO
 		 *	ArrayDumperのコンストラクタでWrite指定
 		 *	String.FormatのLoopSignatureのメソッド化
-		 *	型情報を表示するかの設定
 		 *	
 		 */
         private const string LoopSignature = "<LoopReference>";
@@ -186,6 +185,7 @@ namespace DebugLib
             var propertyPath = new Stack();
 
             var sb = new StringBuilder();
+            sb.AppendLine(ValueToString(obj));
             DumpSubItem(obj, sb, propertyPath);
 
             return sb.ToString();
