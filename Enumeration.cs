@@ -9,16 +9,10 @@ using System.Threading.Tasks;
 namespace DebugLib
 {
     /// <summary>
-    /// クラスプロパティの列挙機能を提供する。
+    /// クラスのプロパティを列挙する機能を提供する。
     /// </summary>
     public static class Enumeration
     {
-        /* 
-		 * TODO
-		 *	ArrayDumperのコンストラクタでWrite指定
-		 *	String.FormatのLoopSignatureのメソッド化
-		 *	
-		 */
         private const string LoopSignature = "<LoopReference>";
         private const string MaxDeepSignature = "<TooDeep>";
         private static readonly string NewLine = Environment.NewLine;
@@ -26,18 +20,16 @@ namespace DebugLib
         {
             { "\0", "\\0" }, { "\a", "\\a" }, { "\b", "\\b" }, { "\f", "\\f" }, { "\n", "\\n" }, { "\r", "\\r" }, { "\t", "\\t" }, { "\v", "\\v" }
         };
-
         private const int DefaultIndentSize = 4;    // public?
-        private static int indentSize;
-
         private const int DefaultMaxDepth = 5;
-        private static int maxDepth;
-
         private static readonly BindingFlags DefaultAccessFlags = BindingFlags.Public | BindingFlags.Instance;
         private const bool DefaultShowPropertyType = true;
         private const bool DefaultEnumerateDelegate = false;
         private const bool DefaultUseOverriddenToString = false;
         private const bool DefaultShowTypeNameOnly = false;
+
+        private static int maxDepth;
+        private static int indentSize;
 
         static Enumeration()
         {
@@ -93,7 +85,7 @@ namespace DebugLib
         public static bool ShowTypeNameOnly { get; set; }
 
         /// <summary>
-        /// 再帰的に列挙せず、文字列化する型のコレクション。
+        /// 再帰的に列挙せず、文字列化する型のコレクションを取得または設定する。
         /// </summary>
         public static List<Type> TypesAsString { get; set; }
 
@@ -104,14 +96,14 @@ namespace DebugLib
         public static bool EnumerateDelegate { get; set; }
 
         /// <summary>
-        /// ToStringメソッドをオーバーライドしている型の場合に、再帰的な列挙をせず、
+        /// ToStringメソッドをオーバーライドしている型の場合に、再帰的に列挙せず、
         /// ToStringメソッドのみによって文字列化するかを取得または設定する。
         /// デフォルト値はfalse。
         /// </summary>
         public static bool UseOverriddenToString { get; set; }
 
         /// <summary>
-        /// 全ての設定用プロパティをデフォルト値に戻す。
+        /// 全ての設定プロパティをデフォルト値に戻す。
         /// </summary>
         public static void Reset()
         {
@@ -404,8 +396,11 @@ namespace DebugLib
             public event EventHandler<WriteEventArgs> Write;
             protected virtual void OnWrite(WriteEventArgs e)
             {
-                if (Write != null)
-                    Write(this, e);
+                var handler = Write;
+                if (handler != null)
+                {
+                    handler(this, e);
+                }
             }
         }
 
@@ -450,8 +445,11 @@ namespace DebugLib
             public event EventHandler<WriteEventArgs> Write;
             protected virtual void OnWrite(WriteEventArgs e)
             {
-                if (Write != null)
-                    Write(this, e);
+                var handler = Write;
+                if (handler != null)
+                {
+                    handler(this, e);
+                }
             }
         }
 
