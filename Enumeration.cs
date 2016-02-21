@@ -34,21 +34,10 @@ namespace DebugLib
         private static int maxDepth;
 
         private static readonly BindingFlags DefaultAccessFlags = BindingFlags.Public | BindingFlags.Instance;
-        private static BindingFlags accessFlags;
-
         private const bool DefaultShowPropertyType = true;
-        private static bool showPropertyType;
-
         private const bool DefaultEnumerateDelegate = false;
-        private static bool enumerateDelegate;
-
         private const bool DefaultUseOverriddenToString = false;
-        private static bool useOverriddenToString;
-
         private const bool DefaultShowTypeNameOnly = false;
-        private static bool showTypeNameOnly;
-
-        private static List<Type> typesAsString;
 
         static Enumeration()
         {
@@ -88,75 +77,52 @@ namespace DebugLib
         /// 列挙するプロパティのアクセスフラグを取得または設定する。
         /// デフォルト値は BindingFlags.Public | BindingFlags.Instance。
         /// </summary>
-        public static BindingFlags AccessFlags
-        {
-            get { return accessFlags; }
-            set { accessFlags = value; }
-        }
+        public static BindingFlags AccessFlags { get; set; }
 
         /// <summary>
         /// プロパティの型情報を表示するかを取得または設定する。
         /// デフォルト値はtrue。
         /// </summary>
-        public static bool ShowPropertyType
-        {
-            get { return showPropertyType; }
-            set { showPropertyType = value; }
-        }
+        public static bool ShowPropertyType { get; set; }
 
         /// <summary>
         /// プロパティの型情報を表示する時、型の名前空間を省略し、
         /// 型名のみを表示するかを取得または設定する。
         /// デフォルト値はfalse。
         /// </summary>
-        public static bool ShowTypeNameOnly
-        {
-            get { return showTypeNameOnly; }
-            set { showTypeNameOnly = value; }
-        }
+        public static bool ShowTypeNameOnly { get; set; }
 
         /// <summary>
         /// 再帰的に列挙せず、文字列化する型のコレクション。
         /// </summary>
-        public static List<Type> TypesAsString
-        {
-            get { return typesAsString; }
-            set { typesAsString = value; }
-        }
+        public static List<Type> TypesAsString { get; set; }
 
         /// <summary>
         /// デリゲートを再帰的に列挙するかを取得または設定する。
         /// デフォルト値はfalse。
         /// </summary>
-        public static bool EnumerateDelegate
-        {
-            get { return enumerateDelegate; }
-            set { enumerateDelegate = value; }
-        }
+        public static bool EnumerateDelegate { get; set; }
 
         /// <summary>
         /// ToStringメソッドをオーバーライドしている型の場合に、再帰的な列挙をせず、
         /// ToStringメソッドのみによって文字列化するかを取得または設定する。
         /// デフォルト値はfalse。
         /// </summary>
-        public static bool UseOverriddenToString
-        {
-            get { return useOverriddenToString; }
-            set { useOverriddenToString = value; }
-        }
+        public static bool UseOverriddenToString { get; set; }
 
         /// <summary>
         /// 全ての設定用プロパティをデフォルト値に戻す。
         /// </summary>
         public static void Reset()
         {
-            indentSize = DefaultIndentSize;
-            maxDepth = DefaultMaxDepth;
-            accessFlags = DefaultAccessFlags;
-            showPropertyType = DefaultShowPropertyType;
-            enumerateDelegate = DefaultEnumerateDelegate;
-            useOverriddenToString = DefaultUseOverriddenToString;
-            typesAsString = new List<Type>();
+            IndentSize = DefaultIndentSize;
+            MaxDepth = DefaultMaxDepth;
+            AccessFlags = DefaultAccessFlags;
+            ShowPropertyType = DefaultShowPropertyType;
+            ShowTypeNameOnly = DefaultShowTypeNameOnly;
+            TypesAsString = new List<Type>();
+            EnumerateDelegate = DefaultEnumerateDelegate;
+            UseOverriddenToString = DefaultUseOverriddenToString;
         }
 
         /// <summary>
@@ -337,7 +303,7 @@ namespace DebugLib
                 return true;
 
             // ユーザー指定
-            if (TypesAsString.Contains(type))
+            if (TypesAsString != null && TypesAsString.Contains(type))
                 return true;
 
             // ToStringをオーバーライド
