@@ -11,7 +11,7 @@ namespace DebugLib
     /// <summary>
     /// クラスのプロパティを列挙する機能を提供する。
     /// </summary>
-    public static class Enumeration
+    public static class Dumper
     {
         private const string LoopSignature = "<LoopReference>";
         private const string MaxDepthSignature = "<TooDeep>";
@@ -31,7 +31,7 @@ namespace DebugLib
         private static int maxDepth;
         private static int indentSize;
 
-        static Enumeration()
+        static Dumper()
         {
             Reset();
         }

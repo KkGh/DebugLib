@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DebugLib
 {
-	public static class MatrixEnumeration
+	public static class MatrixDumper
 	{
 		/// <summary>
 		/// 2次元配列を行列形式でダンプする。
