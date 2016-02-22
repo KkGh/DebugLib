@@ -6,10 +6,13 @@ using System.Threading.Tasks;
 
 namespace DebugLib
 {
+    /// <summary>
+    /// 2次元配列のダンプ機能を提供する。
+    /// </summary>
 	public static class MatrixDumper
 	{
 		/// <summary>
-		/// 2次元配列を行列形式でダンプする。
+		/// 2次元配列を行列形式で出力する。
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <param name="source"></param>
