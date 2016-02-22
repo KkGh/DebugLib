@@ -14,7 +14,7 @@ namespace DebugLib
     public static class Enumeration
     {
         private const string LoopSignature = "<LoopReference>";
-        private const string MaxDeepSignature = "<TooDeep>";
+        private const string MaxDepthSignature = "<TooDeep>";
         private static readonly string NewLine = Environment.NewLine;
         private static readonly Dictionary<string, string> EscapedChars = new Dictionary<string, string>
         {
@@ -96,7 +96,7 @@ namespace DebugLib
         public static bool EnumerateDelegate { get; set; }
 
         /// <summary>
-        /// ToStringメソッドをオーバーライドしている型の場合に、再帰的に列挙せず、
+        /// 型がToStringメソッドをオーバーライドしている場合に、再帰的に列挙せず、
         /// ToStringメソッドのみによって文字列化するかを取得または設定する。
         /// デフォルト値はfalse。
         /// </summary>
@@ -263,7 +263,7 @@ namespace DebugLib
             }
             else
             {
-                sb.AppendLine(CreateIndent(depth + 1) + MaxDeepSignature);
+                sb.AppendLine(CreateIndent(depth + 1) + MaxDepthSignature);
             }
 
             // ダンプ終了
@@ -307,8 +307,7 @@ namespace DebugLib
 
         private static string ValueToString(object value)
         {
-            if (value == null)
-                return "(null)";
+            if (value == null) return "(null)";
 
             var type = value.GetType();
             string escapedValue = EspaceString(value.ToString());
@@ -320,9 +319,22 @@ namespace DebugLib
 
             if (ShowPropertyType)
             {
-                str += " (" + (ShowTypeNameOnly ? type.Name : type.ToString()) + ")";
-            }
+                string typeText;
+                if (ShowTypeNameOnly)
+                {
+                    typeText = type.Name;
+                    if (type.GenericTypeArguments.Any())
+                    {
+                        typeText += $"[{string.Join(",", type.GenericTypeArguments.Select(t => t.Name))}]";
+                    }
+                }
+                else
+                {
+                    typeText = type.ToString();
+                }
 
+                str += " (" + typeText + ")";
+            }
 
             return str;
         }
