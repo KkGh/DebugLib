@@ -309,14 +309,15 @@ namespace DebugLib
         {
             if (value == null) return "(null)";
 
+            // 値
             var type = value.GetType();
-            string escapedValue = EspaceString(value.ToString());
-
+            string escapedValue = EscapeString(value.ToString());
             string str =
                 (type == typeof(string)) ? "\"" + escapedValue + "\"" :
                 (type == typeof(char)) ? "'" + escapedValue + "'" :
                 escapedValue;
 
+            // 型
             if (ShowPropertyType)
             {
                 string typeText;
@@ -351,7 +352,7 @@ namespace DebugLib
             return method.DeclaringType != typeof(object);
         }
 
-        private static string EspaceString(string str)
+        private static string EscapeString(string str)
         {
             var sb = new StringBuilder(str);
             foreach (var converter in EscapedChars)
