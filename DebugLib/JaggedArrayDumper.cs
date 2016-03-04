@@ -18,6 +18,8 @@ namespace DebugLib
             this.array = array;
         }
 
+        public Action<object, List<int>> Write { get; set; }
+
         public void Dump()
         {
             DumpRecursive(this.array);
@@ -45,8 +47,5 @@ namespace DebugLib
                 indexes.RemoveAt(indexes.Count - 1);
             }
         }
-
-        public Action<object, List<int>> Write;
     }
-
 }
