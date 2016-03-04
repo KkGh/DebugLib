@@ -211,12 +211,13 @@ namespace DebugLib
             {
                 // 多次元配列
                 var dumper = new MultiDimensionArrayDumper(array);
-                dumper.Write += (s, e) =>
+                dumper.Write = (obj, indexes) =>
                 {
-                    bool isLooping = propertyPath.Contains(e.Obj);
-                    string index = "[" + string.Join(",", e.Indexes) + "]";
+                    bool isLooping = propertyPath.Contains(obj);
+                    string index = "[" + string.Join(",", indexes) + "]";
                     sb.AppendFormat("{0}{1} {2}{3}" + NewLine,
-                            indent, index, ValueToString(e.Obj), isLooping ? LoopSignature : "");
+                            indent, index, ValueToString(obj), isLooping ? LoopSignature : "");
+                    DumpSubItem(obj, sb, propertyPath);
                 };
                 dumper.Dump();
             }
@@ -224,12 +225,13 @@ namespace DebugLib
             {
                 // ジャグ配列
                 var dumper = new JaggedArrayDumper(array);
-                dumper.Write += (s, e) =>
+                dumper.Write = (obj, indexes) =>
                 {
-                    bool isLooping = propertyPath.Contains(e.Obj);
-                    string index = "[" + string.Join("][", e.Indexes) + "]";
+                    bool isLooping = propertyPath.Contains(obj);
+                    string index = "[" + string.Join("][", indexes) + "]";
                     sb.AppendFormat("{0}{1} {2}{3}" + NewLine,
-                            indent, index, ValueToString(e.Obj), isLooping ? LoopSignature : "");
+                            indent, index, ValueToString(obj), isLooping ? LoopSignature : "");
+                    DumpSubItem(obj, sb, propertyPath);
                 };
                 dumper.Dump();
             }
@@ -368,114 +370,5 @@ namespace DebugLib
             return new string(' ', depth * IndentSize);
         }
 
-        private class JaggedArrayDumper
-        {
-            private List<int> indexes = new List<int>();
-            private Array array;
-
-            public JaggedArrayDumper(Array array)
-            {
-                if (array == null) throw new ArgumentNullException("array");
-                if (array.Rank != 1) throw new ArgumentException("ジャグ配列のみ指定できます。");
-                this.array = array;
-            }
-
-            public void Dump()
-            {
-                DumpRecursive(this.array);
-            }
-
-            private void DumpRecursive(Array array)
-            {
-                for (int i = 0; i < array.Length; i++)
-                {
-                    var item = array.GetValue(i);
-                    var subArray = item as Array;
-                    indexes.Add(i);
-
-                    if (subArray != null && subArray.Rank == 1)
-                    {
-                        DumpRecursive(subArray);
-                    }
-                    else
-                    {
-                        OnWrite(new WriteEventArgs(item, indexes));
-                    }
-
-                    indexes.RemoveAt(indexes.Count - 1);
-                }
-            }
-
-            public event EventHandler<WriteEventArgs> Write;
-            protected virtual void OnWrite(WriteEventArgs e)
-            {
-                var handler = Write;
-                if (handler != null)
-                {
-                    handler(this, e);
-                }
-            }
-        }
-
-        private class MultiDimensionArrayDumper
-        {
-            private List<int> indexes = new List<int>();
-            private Array array;
-
-            public MultiDimensionArrayDumper(Array array)
-            {
-                if (array == null) throw new ArgumentNullException("array");
-                if (array.Rank == 1) throw new ArgumentException("多次元配列のみ指定できます。");
-                this.array = array;
-            }
-
-            public void Dump()
-            {
-                DumpRecursive(0);
-            }
-
-            private void DumpRecursive(int currentDimension)
-            {
-                int length = array.GetLength(currentDimension);
-                for (int i = 0; i < length; i++)
-                {
-                    indexes.Add(i);
-
-                    if (currentDimension < array.Rank - 1)
-                    {
-                        DumpRecursive(currentDimension + 1);
-                    }
-                    else
-                    {
-                        var value = array.GetValue(indexes.ToArray());
-                        OnWrite(new WriteEventArgs(value, indexes));
-                    }
-
-                    indexes.RemoveAt(indexes.Count - 1);
-                }
-            }
-
-            public event EventHandler<WriteEventArgs> Write;
-            protected virtual void OnWrite(WriteEventArgs e)
-            {
-                var handler = Write;
-                if (handler != null)
-                {
-                    handler(this, e);
-                }
-            }
-        }
-
-        private class WriteEventArgs : EventArgs
-        {
-            public WriteEventArgs(object obj, IEnumerable<int> indexes)
-            {
-                this.Obj = obj;
-                this.Indexes = indexes;
-            }
-
-            public object Obj { get; private set; }
-            public IEnumerable<int> Indexes { get; private set; }
-        }
     }
 }

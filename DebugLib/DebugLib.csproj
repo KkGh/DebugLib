@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{14FEE0E9-1515-4688-B3D6-36A03C0F0F77}</ProjectGuid>
+    <ProjectGuid>{2DB2E624-0638-4380-B079-1329A1F01A34}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>DebugLib</RootNamespace>
@@ -43,39 +43,16 @@
   <ItemGroup>
     <Compile Include="AssertEx.cs" />
     <Compile Include="Dumper.cs" />
+    <Compile Include="JaggedArrayDumper.cs" />
     <Compile Include="MatrixDumper.cs" />
+    <Compile Include="MultiDimensionArrayDumper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(ProgramFiles)\MSBuild\StyleCop\v4.7\StyleCop.targets" />
   <PropertyGroup>
-    <PostBuildEvent>set output_root=C:\Users\kos\MyFolder\MY_Csharp\MyClassLibrary\_Libraries\
-set getver_py=C:\Users\kos\MyFolder\MY_Python\_products\getver\0.1.0\getver.py
-for /f "usebackq tokens=*" %25%25i in (`python "%25getver_py%25" $(TargetFileName)`) do set version=%25%25i
-set short_ver=%25version:~0,-2%25
-set output=%25output_root%25$(TargetName)\%25short_ver%25\
-
-if $(ConfigurationName) == Release (
-  if exist "%25output%25" (
-    echo 自動リリースに失敗:
-    echo ディレクトリ %25output%25 が既に存在しています。
-    exit
-  )
-
-  echo ディレクトリ %25output%25 を作成します。
-  mkdir "%25output%25"
-  copy $(TargetFileName) "%25output%25"
-  if exist *.dll (
-    copy *.dll "%25output%25"
-  )
-  if exist *.XML (
-    copy *.XML "%25output%25"
-  )
-  
-  echo 自動リリースが成功しました。リリース先:
-  echo %25output%25 
-)
-</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
