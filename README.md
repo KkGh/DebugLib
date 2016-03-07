@@ -83,3 +83,6 @@ Sample.Person
   Name = "Example"
 }
 ```
+
+## License
+MIT ライセンス
