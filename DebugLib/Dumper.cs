@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -20,13 +21,14 @@ namespace DebugLib
         {
             { "\0", "\\0" }, { "\a", "\\a" }, { "\b", "\\b" }, { "\f", "\\f" }, { "\n", "\\n" }, { "\r", "\\r" }, { "\t", "\\t" }, { "\v", "\\v" }
         };
-        private const int DefaultIndentSize = 4;    // public?
+        private const int DefaultIndentSize = 4;    // public? DefaultValueAttributeにして各プロパティに紐づける？
         private const int DefaultMaxDepth = 5;
         private static readonly BindingFlags DefaultAccessFlags = BindingFlags.Public | BindingFlags.Instance;
         private const bool DefaultShowPropertyType = true;
         private const bool DefaultEnumerateDelegate = false;
         private const bool DefaultUseOverriddenToString = false;
         private const bool DefaultShowTypeNameOnly = false;
+        private const bool DefaultIgnoreNullProperty = false;
 
         private static int maxDepth;
         private static int indentSize;
@@ -103,6 +105,13 @@ namespace DebugLib
         public static bool UseOverriddenToString { get; set; }
 
         /// <summary>
+        /// プロパティの値がnullの場合に、プロパティのダンプを省略するかを
+        /// 取得または設定する。
+        /// デフォルト値はfalse。
+        /// </summary>
+        public static bool IgnoreNullProperty { get; set; }
+
+        /// <summary>
         /// 全ての設定プロパティをデフォルト値に戻す。
         /// </summary>
         public static void Reset()
@@ -115,6 +124,7 @@ namespace DebugLib
             TypesAsString = new List<Type>();
             EnumerateDelegate = DefaultEnumerateDelegate;
             UseOverriddenToString = DefaultUseOverriddenToString;
+            IgnoreNullProperty = DefaultIgnoreNullProperty;
         }
 
         /// <summary>
@@ -159,7 +169,9 @@ namespace DebugLib
             {
                 try
                 {
-                    var value = p.GetValue(obj);
+                    object value = p.GetValue(obj);
+                    if (IgnoreNullProperty && value == null) continue;
+
                     bool isLooping = propertyPath.Contains(value);
                     sb.AppendFormat("{0}{1} = {2}{3}" + NewLine,
                         indent, p.Name, ValueToString(value), isLooping ? LoopSignature : "");
@@ -342,7 +354,6 @@ namespace DebugLib
             return str;
         }
 
-
         /// <summary>
         /// 指定した型のToStringメソッドがオーバーライドされているかどうかを判定する。
         /// </summary>
@@ -369,6 +380,5 @@ namespace DebugLib
         {
             return new string(' ', depth * IndentSize);
         }
-
     }
 }

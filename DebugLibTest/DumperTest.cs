@@ -464,6 +464,33 @@ Number = 0 (System.Int32)
 ", tuple.DumpToString());
         }
 
+        [TestMethod]
+        public void Test_Dump_IgnoreNullProperty()
+        {
+            Dumper.IgnoreNullProperty = true;
+
+            var deep = new DeepClass()
+            {
+                Number = 1,
+            };
+
+            Assert.AreEqual(@"DebugLibTest.DeepClass (DebugLibTest.DeepClass)
+{
+    Number = 1 (System.Int32)
+}
+", deep.DumpToString());
+
+            var list = new List<string> { "ABC", null, "DEF" };
+            list.Dump();
+            Assert.AreEqual(@"System.Collections.Generic.List`1[System.String] (System.Collections.Generic.List`1[System.String])
+{
+    [0] ""ABC"" (System.String)
+    [1] (null)
+    [2] ""DEF"" (System.String)
+}
+", list.DumpToString());
+        }
+
         #endregion
     }
 
